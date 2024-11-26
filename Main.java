@@ -8,23 +8,72 @@ public class Main {
     Random random = new Random();
 
     public static void main(String[] args) {
-        Main main = new Main();
-        main.generateInitialChromosomes(100); // Генерация 100 хромосом
-        main.printPopulation(false);
+        // Создаем экземпляр класса Main
+        Main mainInstance = new Main();
+        mainInstance.generateInitialChromosomes(100); // Генерация 100 хромосом
+
+        // Убираем ограничение на количество поколений
+        double mutationRate = 0.05; // Вероятность мутации
+        Chromosome bestSolution = null;
+
+        int generation = 0;
+        while (true) {
+            // Оценка текущего поколения
+            mainInstance.evaluatePopulation();
+
+            // Отбор родителей и создание новых потомков
+            List<Chromosome> newPopulation = new ArrayList<>();
+            for (int i = 0; i < mainInstance.population.size() / 2; i++) {
+
+                List<Chromosome> parents = mainInstance.tournamentSelection(5);
+                Chromosome child1 = mainInstance.crossoverBySubgrids(parents.get(0), parents.get(1));
+                Chromosome child2 = mainInstance.crossoverBySubgrids(parents.get(1), parents.get(0));
+
+                // Мутация потомков
+                mainInstance.mutateChromosome(child1, mutationRate);
+                mainInstance.mutateChromosome(child2, mutationRate);
+
+                newPopulation.add(child1);
+                newPopulation.add(child2);
+            }
+
+            // Замена старой популяции на новую
+            mainInstance.population = newPopulation;
+
+            // Логирование лучшего решения текущего поколения
+            bestSolution = mainInstance.getBestChromosome();
+            System.out.println("Generation " + generation + ": Best Fitness = " + bestSolution.getFitness());
+            generation++;
+
+            // Критерий завершения (если найдено идеальное решение)
+            if (bestSolution.getFitness() == 0) {
+                System.out.println("Optimal solution found in generation " + generation);
+                break;
+            }
+        }
+
+        // Вывод финального решения
+        if (bestSolution != null) {
+            System.out.println("Final Solution:");
+            bestSolution.printChromosome(false);
+            System.out.println("Fitness: " + bestSolution.getFitness());
+        }
+        
 
         // Пример использования турнирной селекции
-        List<Chromosome> parents = main.tournamentSelection(5);
+        List<Chromosome> parents = mainInstance.tournamentSelection(5);
         System.out.println("Selected Parents:");
         for (Chromosome parent : parents) {
             parent.printChromosome(false);
             System.out.println("Fitness: " + parent.getFitness());
         }
         // Пример использования кроссовера по подрешеткам
-        Chromosome child = main.crossoverBySubgrids(parents.get(0), parents.get(1));
+        Chromosome child = mainInstance.crossoverBySubgrids(parents.get(0), parents.get(1));
         // Пример мутации
-        main.mutateChromosome(child, 0.05); // Мутация с вероятностью 5%
+        mainInstance.mutateChromosome(child, 0.05); // Мутация с вероятностью 5%
         System.out.println("Child Chromosome:");
         child.printChromosome(false);
+        System.out.println("Fitness: " + child.getFitness());
         System.out.println("Fitness: " + child.getFitness());
 
     }
@@ -170,6 +219,24 @@ public class Main {
         // Обновляем матрицу и оцениваем фитнес
         chromosome.setSudoku(sudoku);
         chromosome.evaluateFitness();
+    }
+
+    // Метод для оценки всей популяции
+    public void evaluatePopulation() {
+        for (Chromosome chromosome : population) {
+            chromosome.evaluateFitness();
+        }
+    }
+
+    // Метод для получения лучшей хромосомы в популяции
+    public Chromosome getBestChromosome() {
+        Chromosome best = population.get(0);
+        for (Chromosome chromosome : population) {
+            if (chromosome.getFitness() < best.getFitness()) {
+                best = chromosome;
+            }
+        }
+        return best;
     }
 
     // Класс хромосомы
