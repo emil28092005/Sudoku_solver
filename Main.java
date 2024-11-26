@@ -1,48 +1,47 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
+import java.io.*;
+import java.util.Random;
 
 public class Main {
-    public static void main(String[] args) {
-        char[][] matrix = readInputs();
+    int[][] population = new int[9][9]; // Матрица для хранения всего Sudoku
+    Random random = new Random();
 
-        for (char[] row : matrix) {
-            for (char c : row) {
-                System.out.print(c + " ");
+    public static void main(String[] args) {
+        Main main = new Main();
+        main.generateInitialMatrix();
+        main.printPopulation();
+    }
+
+    // Генерация начальной матрицы из файла
+    public void generateInitialMatrix() {
+        String inputFileName = "input.txt";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(inputFileName))) {
+            String line;
+            int rowIndex = 0; // Индекс строки в матрице
+            while ((line = br.readLine()) != null) {
+                String[] tokens = line.split(" "); // Разделяем строку по пробелам
+                for (int colIndex = 0; colIndex < tokens.length; colIndex++) {
+                    if (tokens[colIndex].equals("-")) {
+                        population[rowIndex][colIndex] = random.nextInt(10); // Генерируем случайное число
+                    } else {
+                        population[rowIndex][colIndex] = Integer.parseInt(tokens[colIndex]); // Конвертируем строку в число
+                    }
+                }
+                rowIndex++; // Переход к следующей строке
             }
-            System.out.println();
+        } catch (IOException e) {
+            System.err.println("Error reading the file: " + e.getMessage());
         }
     }
 
-    public static char[][] readInputs() {
-        char[][] matrix = new char[9][9]; // Initialize a 9x9 matrix
-        try {
-            File file = new File("./input.txt");
-            Scanner scanner = new Scanner(file);
-            
-            int row = 0;
-            while (scanner.hasNextLine() && row < 9) {
-                String line = scanner.nextLine();
-                if (line.length() != 9) {
-                    throw new IllegalArgumentException("Each line in the file must have exactly 9 characters.");
-                }
-                for (int col = 0; col < 9; col++) {
-                    matrix[row][col] = line.charAt(col);
-                }
-                row++;
+    // Вывод содержимого population для проверки
+    public void printPopulation() {
+        System.out.println("Generated Matrix:");
+        for (int[] row : population) {
+            for (int num : row) {
+                System.out.print(num + " ");
             }
-            
-            if (row != 9) {
-                throw new IllegalArgumentException("The file must contain exactly 9 lines.");
-            }
-            
-            scanner.close();
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found");
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
+            System.out.println();
         }
-        
-        return matrix;
     }
 }
