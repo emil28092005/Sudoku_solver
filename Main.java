@@ -4,6 +4,13 @@ import java.util.List;
 import java.util.Random;
 
 public class Main {
+    // Initalizing variables
+    public static int POPULATIONSIZE = 0;
+    public static int TOURNAMENTSIZE = 0;
+    public static double MUTATIONRATE = 0;
+    // Threshold of number of mutable positions for easy level sudoku
+    public static int EASYTHRESHOLD = 60; 
+    public static int HARDTHRESHOLD = 70;
     // List to store the population of chromosomes
     List<Chromosome> population = new ArrayList<>();
     Random random = new Random();
@@ -39,10 +46,26 @@ public class Main {
         }
 
         Main mainInstance = new Main(); // Create instance of Main class
-        // Generate initial population of 100 chromosomes
-        mainInstance.generateInitialChromosomes(100, baseSudoku, mutablePositions);
 
-        double mutationRate = 0.05; // Mutation rate for genetic algorithm
+        // Choosing variables for different sudoku difficulties
+        if (mutablePositions.size() < EASYTHRESHOLD) { // Easy sudoku
+            POPULATIONSIZE = 75;
+            TOURNAMENTSIZE = 4;
+            MUTATIONRATE = 0.04;
+        } else if (mutablePositions.size() < HARDTHRESHOLD) { // Hard sudoku
+            POPULATIONSIZE = 150;
+            TOURNAMENTSIZE = 5;
+            MUTATIONRATE = 0.055;
+        }
+        else { // Ultra-hard sudoku
+            POPULATIONSIZE = 2000;
+            TOURNAMENTSIZE = 10;
+            MUTATIONRATE = 0.2;
+        }
+        
+        // Generate initial population of 100 chromosomes
+        mainInstance.generateInitialChromosomes(POPULATIONSIZE, baseSudoku, mutablePositions);
+
         Chromosome bestSolution = null;
 
         int generation = 0; // Track the number of generations
@@ -53,14 +76,14 @@ public class Main {
             List<Chromosome> newPopulation = new ArrayList<>();
             for (int i = 0; i < mainInstance.population.size() / 2; i++) {
                 // Select parents using tournament selection
-                List<Chromosome> parents = mainInstance.tournamentSelection(5);
+                List<Chromosome> parents = mainInstance.tournamentSelection(TOURNAMENTSIZE);
                 // Perform crossover to create two children from the selected parents
                 Chromosome child1 = mainInstance.crossoverBySubgrids(parents.get(0), parents.get(1));
                 Chromosome child2 = mainInstance.crossoverBySubgrids(parents.get(1), parents.get(0));
 
                 // Apply mutation to both children
-                mainInstance.mutateChromosome(child1, mutationRate);
-                mainInstance.mutateChromosome(child2, mutationRate);
+                mainInstance.mutateChromosome(child1, MUTATIONRATE);
+                mainInstance.mutateChromosome(child2, MUTATIONRATE);
 
                 // Add both children to the new population
                 newPopulation.add(child1);
