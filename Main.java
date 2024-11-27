@@ -48,33 +48,18 @@ public class Main {
             // Критерий завершения (если найдено идеальное решение)
             if (bestSolution.getFitness() == 0) {
                 System.out.println("Optimal solution found in generation " + generation);
-                break;
+                System.out.println("Final Solution:");
+                bestSolution.printChromosome(false);
+                System.out.println("Fitness: " + bestSolution.getFitness());
+                return;
             }
         }
 
-        // Вывод финального решения
-        if (bestSolution != null) {
-            System.out.println("Final Solution:");
-            bestSolution.printChromosome(false);
-            System.out.println("Fitness: " + bestSolution.getFitness());
-        }
+        
         
 
-        // Пример использования турнирной селекции
-        List<Chromosome> parents = mainInstance.tournamentSelection(5);
-        System.out.println("Selected Parents:");
-        for (Chromosome parent : parents) {
-            parent.printChromosome(false);
-            System.out.println("Fitness: " + parent.getFitness());
-        }
-        // Пример использования кроссовера по подрешеткам
-        Chromosome child = mainInstance.crossoverBySubgrids(parents.get(0), parents.get(1));
-        // Пример мутации
-        mainInstance.mutateChromosome(child, 0.05); // Мутация с вероятностью 5%
-        System.out.println("Child Chromosome:");
-        child.printChromosome(false);
-        System.out.println("Fitness: " + child.getFitness());
-        System.out.println("Fitness: " + child.getFitness());
+        
+        
 
     }
 
