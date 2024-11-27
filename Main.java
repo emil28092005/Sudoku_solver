@@ -11,7 +11,7 @@ public class Main {
     // Threshold of number of mutable positions for easy level sudoku
     public static int EASYTHRESHOLD = 60; 
     public static int HARDTHRESHOLD = 70;
-    // List to store the population of chromosomes
+    // List to store the population of chromosomes  
     List<Chromosome> population = new ArrayList<>();
     Random random = new Random();
 
@@ -58,9 +58,9 @@ public class Main {
             MUTATIONRATE = 0.057;
         }
         else { // Ultra-hard sudoku
-            POPULATIONSIZE = 2000;
-            TOURNAMENTSIZE = 10;
-            MUTATIONRATE = 0.2;
+            POPULATIONSIZE = 20000;
+            TOURNAMENTSIZE = 4;
+            MUTATIONRATE = 0.032;
         }
         
         // Generate initial population of 100 chromosomes

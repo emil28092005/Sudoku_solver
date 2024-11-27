@@ -63,9 +63,9 @@ public class Main {
             MUTATIONRATE = 0.055;
         }
         else { // Ultra-hard sudoku
-            POPULATIONSIZE = 2000;
-            TOURNAMENTSIZE = 10;
-            MUTATIONRATE = 0.2;
+            POPULATIONSIZE = 20000;
+            TOURNAMENTSIZE = 4;
+            MUTATIONRATE = 0.032;
         }
         
         // Generate initial population of chromosomes
@@ -106,7 +106,7 @@ public class Main {
             generation++;
 
             // Plot the fitness graph every 10 generations
-            if (generation % 10 == 0) {
+            if (generation % 100 == 0) {
                 mainInstance.plotFitness(fitnessValues);
             }
 
