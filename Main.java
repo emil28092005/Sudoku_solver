@@ -4,67 +4,77 @@ import java.util.List;
 import java.util.Random;
 
 public class Main {
-    List<Chromosome> population = new ArrayList<>(); // Список хромосом
+    // List to store the population of chromosomes
+    List<Chromosome> population = new ArrayList<>();
     Random random = new Random();
 
     public static void main(String[] args) {
-        // Чтение входной матрицы из консоли
+        // Base Sudoku matrix (input matrix)
         int[][] baseSudoku = new int[9][9];
+        // List to track positions in Sudoku that are mutable
         List<int[]> mutablePositions = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        
         try {
+            // Reading the Sudoku matrix from the console input
             for (int i = 0; i < 9; i++) {
+                // Split the input by space
                 String[] tokens = reader.readLine().split(" ");
                 for (int j = 0; j < 9; j++) {
                     if (tokens[j].equals("-")) {
+                        // Empty cells are marked as 0
                         baseSudoku[i][j] = 0;
+                        // Add mutable positions (i, j) to the list
                         mutablePositions.add(new int[]{i, j});
                     } else {
+                        // Set fixed value from the input
                         baseSudoku[i][j] = Integer.parseInt(tokens[j]);
                     }
                 }
             }
         } catch (IOException e) {
+            // If an error occurs during input reading, print the error and stop the program
             System.err.println("Error reading input: " + e.getMessage());
             return;
         }
 
-        // Создаем экземпляр класса Main
-        Main mainInstance = new Main();
-        mainInstance.generateInitialChromosomes(100, baseSudoku, mutablePositions); // Генерация 100 хромосом
+        Main mainInstance = new Main(); // Create instance of Main class
+        // Generate initial population of 100 chromosomes
+        mainInstance.generateInitialChromosomes(100, baseSudoku, mutablePositions);
 
-        // Убираем ограничение на количество поколений
-        double mutationRate = 0.05; // Вероятность мутации
+        double mutationRate = 0.05; // Mutation rate for genetic algorithm
         Chromosome bestSolution = null;
 
-        int generation = 0;
+        int generation = 0; // Track the number of generations
         while (true) {
-            // Оценка текущего поколения
+            // Evaluate the fitness of each chromosome in the population
             mainInstance.evaluatePopulation();
 
-            // Отбор родителей и создание новых потомков
             List<Chromosome> newPopulation = new ArrayList<>();
             for (int i = 0; i < mainInstance.population.size() / 2; i++) {
+                // Select parents using tournament selection
                 List<Chromosome> parents = mainInstance.tournamentSelection(5);
+                // Perform crossover to create two children from the selected parents
                 Chromosome child1 = mainInstance.crossoverBySubgrids(parents.get(0), parents.get(1));
                 Chromosome child2 = mainInstance.crossoverBySubgrids(parents.get(1), parents.get(0));
 
-                // Мутация потомков
+                // Apply mutation to both children
                 mainInstance.mutateChromosome(child1, mutationRate);
                 mainInstance.mutateChromosome(child2, mutationRate);
 
+                // Add both children to the new population
                 newPopulation.add(child1);
                 newPopulation.add(child2);
             }
 
-            // Замена старой популяции на новую
+            // Replace the old population with the new population
             mainInstance.population = newPopulation;
 
-            // Логирование лучшего решения текущего поколения
+            // Get the best chromosome from the current population
             bestSolution = mainInstance.getBestChromosome();
             generation++;
 
-            // Критерий завершения (если найдено идеальное решение)
+            // If the best solution found has a fitness of 0, print it and end the program
             if (bestSolution.getFitness() == 0) {
                 bestSolution.printChromosome(false);
                 return;
@@ -72,25 +82,25 @@ public class Main {
         }
     }
 
-    // Генерация начальной популяции хромосом
+    // Generate initial population of chromosomes
     public void generateInitialChromosomes(int numberOfChromosomes, int[][] baseSudoku, List<int[]> mutablePositions) {
-        // Создаем заданное количество хромосом
         for (int i = 0; i < numberOfChromosomes; i++) {
-            int[][] sudoku = copyMatrix(baseSudoku); // Копируем базовый Судоку
-            // Заполняем изменяемые позиции случайными числами (1-9)
+            // Create a copy of the base Sudoku
+            int[][] sudoku = copyMatrix(baseSudoku);
+            // Randomly fill mutable positions
             for (int[] pos : mutablePositions) {
                 int row = pos[0];
                 int col = pos[1];
                 sudoku[row][col] = random.nextInt(9) + 1;
             }
-            // Добавляем хромосому в популяцию
+            // Create a new chromosome with the generated Sudoku and mutable positions
             Chromosome chromosome = new Chromosome(sudoku, new ArrayList<>(mutablePositions));
-            chromosome.evaluateFitness(); // Оценка фитнеса хромосомы
-            population.add(chromosome);
+            chromosome.evaluateFitness(); // Evaluate its fitness
+            population.add(chromosome); // Add to the population
         }
     }
 
-    // Копирование матрицы
+    // Create a deep copy of a matrix
     private int[][] copyMatrix(int[][] original) {
         int[][] copy = new int[original.length][original[0].length];
         for (int i = 0; i < original.length; i++) {
@@ -99,37 +109,39 @@ public class Main {
         return copy;
     }
 
-    // Турнирная селекция
+
     public List<Chromosome> tournamentSelection(int tournamentSize) {
         List<Chromosome> selectedParents = new ArrayList<>();
-        for (int i = 0; i < 2; i++) { // Выбираем двух родителей
+        for (int i = 0; i < 2; i++) {
             List<Chromosome> tournament = new ArrayList<>();
+            // Randomly select chromosomes for the tournament
             for (int j = 0; j < tournamentSize; j++) {
                 Chromosome randomChromosome = population.get(random.nextInt(population.size()));
                 tournament.add(randomChromosome);
             }
+            // Determine the best chromosome in the tournament based on fitness
             Chromosome best = tournament.get(0);
             for (Chromosome chromosome : tournament) {
                 if (chromosome.getFitness() < best.getFitness()) {
                     best = chromosome;
                 }
             }
+            // Add the best chromosome to the list of selected parents
             selectedParents.add(best);
         }
         return selectedParents;
     }
-
-    // Кроссовер по подрешеткам
+    
     public Chromosome crossoverBySubgrids(Chromosome parent1, Chromosome parent2) {
         int[][] childSudoku = new int[9][9];
-
-        // Сначала копируем матрицу от первого родителя
+    
+        // Copy the entire Sudoku grid from parent1 to the child
         for (int row = 0; row < 9; row++) {
             System.arraycopy(parent1.getSudoku()[row], 0, childSudoku[row], 0, 9);
         }
-
-        // Выбираем случайные подрешётки для обмена (например, 4 подрешётка)
-        int numSubgridsToSwap = random.nextInt(5) + 1; // Выбираем от 1 до 5 подрешеток для обмена
+    
+        // Determine the number of subgrids to swap from parent2 to child (1-5)
+        int numSubgridsToSwap = random.nextInt(5) + 1;
         List<Integer> selectedSubgrids = new ArrayList<>();
         while (selectedSubgrids.size() < numSubgridsToSwap) {
             int subgridIndex = random.nextInt(9);
@@ -137,8 +149,8 @@ public class Main {
                 selectedSubgrids.add(subgridIndex);
             }
         }
-
-        // Выполняем обмен выбранных подрешётков
+    
+        // Swap the selected subgrids from parent2 into the child
         for (int subgrid : selectedSubgrids) {
             int rowStart = (subgrid / 3) * 3;
             int colStart = (subgrid % 3) * 3;
@@ -148,17 +160,17 @@ public class Main {
                 }
             }
         }
-
-        // Создаем и возвращаем нового потомка
+    
+        // Create a new chromosome with the resulting child Sudoku and evaluate its fitness
         Chromosome child = new Chromosome(childSudoku, parent1.getMutablePositions());
         child.evaluateFitness();
         return child;
     }
-
-    // Вывод содержимого популяции для проверки
+    
     public void printPopulation(boolean printMutPos) {
         System.out.println("Generated Population:");
         int count = 1;
+        // Print each chromosome's Sudoku and fitness value
         for (Chromosome chromosome : population) {
             System.out.println("Chromosome " + count + ":");
             chromosome.printChromosome(printMutPos);
@@ -167,37 +179,35 @@ public class Main {
             count++;
         }
     }
-
-    // Мутация хромосомы
+    
     public void mutateChromosome(Chromosome chromosome, double mutationRate) {
         int[][] sudoku = chromosome.getSudoku();
         List<int[]> mutablePositions = chromosome.getMutablePositions();
-
-        // Проходим по всем изменяемым позициям
+    
+        // Mutate each mutable position with a probability defined by mutationRate
         for (int[] pos : mutablePositions) {
             if (random.nextDouble() < mutationRate) {
                 int row = pos[0];
                 int col = pos[1];
-                int newValue = random.nextInt(9) + 1; // Генерируем новое значение от 1 до 9
-                sudoku[row][col] = newValue; // Изменяем значение в выбранной позиции
+                int newValue = random.nextInt(9) + 1; // Assign a new value between 1 and 9
+                sudoku[row][col] = newValue;
             }
         }
-
-        // Обновляем матрицу и оцениваем фитнес
+    
+        // Update the chromosome's Sudoku and recalculate its fitness
         chromosome.setSudoku(sudoku);
         chromosome.evaluateFitness();
     }
-
-    // Метод для оценки всей популяции
+    
     public void evaluatePopulation() {
+        // Evaluate the fitness of each chromosome in the population
         for (Chromosome chromosome : population) {
             chromosome.evaluateFitness();
         }
     }
-
-    // Метод для получения лучшей хромосомы в популяции
-
+    
     public Chromosome getBestChromosome() {
+        // Find and return the chromosome with the best (lowest) fitness in the population
         Chromosome best = population.get(0);
         for (Chromosome chromosome : population) {
             if (chromosome.getFitness() < best.getFitness()) {
@@ -206,81 +216,71 @@ public class Main {
         }
         return best;
     }
-
-    // Класс хромосомы
+    
+    // Chromosome class representing an individual solution
     public class Chromosome {
-        private int[][] sudoku; // Матрица Судоку
-        private List<int[]> mutablePositions; // Список координат изменяемых позиций
-        private int fitness; // Значение фитнеса
-
-        // Конструктор для инициализации хромосомы
+        private int[][] sudoku; // Sudoku grid representing the chromosome
+        private List<int[]> mutablePositions; // Positions that can be changed (mutable)
+        private int fitness; // Fitness value representing the number of conflicts
+    
+        // Constructor for initializing a Chromosome with a Sudoku grid and mutable positions
         public Chromosome(int[][] sudoku, List<int[]> mutablePositions) {
             this.sudoku = sudoku;
             this.mutablePositions = mutablePositions;
         }
-
-        // Геттер для матрицы Судоку
+    
         public int[][] getSudoku() {
             return sudoku;
         }
-
-        // Сеттер для матрицы Судоку
+    
         public void setSudoku(int[][] sudoku) {
             this.sudoku = sudoku;
         }
-
-        // Геттер для изменяемых позиций
+    
         public List<int[]> getMutablePositions() {
             return mutablePositions;
         }
-
-        // Сеттер для изменяемых позиций
-        public void setMutablePositions(List<int[]> mutablePositions) {
-            this.mutablePositions = mutablePositions;
-        }
-
-        // Геттер для фитнеса
+    
         public int getFitness() {
             return fitness;
         }
-
-        // Метод для оценки фитнеса хромосомы
+    
+        // Evaluate the fitness of the Sudoku by counting the number of row, column, and subgrid violations
         public void evaluateFitness() {
             fitness = countRowViolations() + countColumnViolations() + countSubgridViolations();
         }
-
-        // Подсчет нарушений в строках
-       
-        // Подсчет нарушений в строках
+    
         private int countRowViolations() {
             int violations = 0;
+            // Iterate through each row to count conflicts
             for (int i = 0; i < 9; i++) {
-                boolean[] present = new boolean[10]; // Используем индекс от 1 до 9
+                boolean[] present = new boolean[10];
                 for (int j = 0; j < 9; j++) {
                     int value = sudoku[i][j];
                     if (value != 0) {
                         if (present[value]) {
-                            violations++;
+                            violations++; // Increment violations if the value is already seen
                         } else {
-                            present[value] = true;
+                            present[value] = true; // Mark the value as seen
                         }
                     }
                 }
             }
             return violations;
         }
-
-        // Подсчет нарушений в колонках
         private int countColumnViolations() {
             int violations = 0;
+            // Loop through each column
             for (int j = 0; j < 9; j++) {
-                boolean[] present = new boolean[10]; // Используем индекс от 1 до 9
+                boolean[] present = new boolean[10]; // Track numbers present in the column
                 for (int i = 0; i < 9; i++) {
                     int value = sudoku[i][j];
                     if (value != 0) {
+                        // If the number is already present, increment the violations count
                         if (present[value]) {
                             violations++;
                         } else {
+                            // Mark the number as present
                             present[value] = true;
                         }
                     }
@@ -288,20 +288,23 @@ public class Main {
             }
             return violations;
         }
-
-        // Подсчет нарушений в подрешетках
+        
         private int countSubgridViolations() {
             int violations = 0;
+            // Loop through each 3x3 subgrid
             for (int gridRow = 0; gridRow < 3; gridRow++) {
                 for (int gridCol = 0; gridCol < 3; gridCol++) {
-                    boolean[] present = new boolean[10]; // Используем индекс от 1 до 9
+                    boolean[] present = new boolean[10]; // Track numbers present in the subgrid
+                    // Loop through cells in the 3x3 subgrid
                     for (int row = gridRow * 3; row < gridRow * 3 + 3; row++) {
                         for (int col = gridCol * 3; col < gridCol * 3 + 3; col++) {
                             int value = sudoku[row][col];
                             if (value != 0) {
+                                // If the number is already present, increment the violations count
                                 if (present[value]) {
                                     violations++;
                                 } else {
+                                    // Mark the number as present
                                     present[value] = true;
                                 }
                             }
@@ -311,23 +314,30 @@ public class Main {
             }
             return violations;
         }
-
-        // Метод для отображения состояния хромосомы
+        
         public void printChromosome(boolean printMutPos) {
-            //System.out.println("Sudoku Matrix:");
+            // Print the Sudoku matrix
             for (int[] row : sudoku) {
-                for (int num : row) {
-                    System.out.print(num + " ");
+                for (int j = 0; j < row.length; j++) {
+                    System.out.print(row[j]);
+                    if (j < row.length - 1) {
+                        System.out.print(" ");
+                    }
                 }
                 System.out.println();
             }
+            // If requested, print mutable positions
             if (printMutPos) {
                 System.out.println("Mutable Positions:");
-                for (int[] pos : mutablePositions) {
-                    System.out.print("(" + pos[0] + ", " + pos[1] + ") ");
+                for (int i = 0; i < mutablePositions.size(); i++) {
+                    int[] pos = mutablePositions.get(i);
+                    System.out.print("(" + pos[0] + ", " + pos[1] + ")");
+                    if (i < mutablePositions.size() - 1) {
+                        System.out.print(" ");
+                    }
                 }
                 System.out.println();
             }
         }
     }
-}
+}        
