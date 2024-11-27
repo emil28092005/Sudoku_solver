@@ -1,7 +1,12 @@
+package com.example;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.knowm.xchart.SwingWrapper;
+import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYSeries;
+import org.knowm.xchart.XYSeries.XYSeriesRenderStyle;
 
 public class Main {
     // Initalizing variables
@@ -49,13 +54,13 @@ public class Main {
 
         // Choosing variables for different sudoku difficulties
         if (mutablePositions.size() < EASYTHRESHOLD) { // Easy sudoku
-            POPULATIONSIZE = 100;
-            TOURNAMENTSIZE = 5;
-            MUTATIONRATE = 0.05;
+            POPULATIONSIZE = 75;
+            TOURNAMENTSIZE = 4;
+            MUTATIONRATE = 0.04;
         } else if (mutablePositions.size() < HARDTHRESHOLD) { // Hard sudoku
-            POPULATIONSIZE = 100;
+            POPULATIONSIZE = 150;
             TOURNAMENTSIZE = 5;
-            MUTATIONRATE = 0.057;
+            MUTATIONRATE = 0.055;
         }
         else { // Ultra-hard sudoku
             POPULATIONSIZE = 2000;
@@ -63,15 +68,20 @@ public class Main {
             MUTATIONRATE = 0.2;
         }
         
-        // Generate initial population of 100 chromosomes
+        // Generate initial population of chromosomes
         mainInstance.generateInitialChromosomes(POPULATIONSIZE, baseSudoku, mutablePositions);
 
         Chromosome bestSolution = null;
+        List<Integer> fitnessValues = new ArrayList<>();
 
         int generation = 0; // Track the number of generations
         while (true) {
             // Evaluate the fitness of each chromosome in the population
             mainInstance.evaluatePopulation();
+
+            // Track the best fitness value in the current generation
+            bestSolution = mainInstance.getBestChromosome();
+            fitnessValues.add(bestSolution.getFitness());
 
             List<Chromosome> newPopulation = new ArrayList<>();
             for (int i = 0; i < mainInstance.population.size() / 2; i++) {
@@ -93,9 +103,12 @@ public class Main {
             // Replace the old population with the new population
             mainInstance.population = newPopulation;
 
-            // Get the best chromosome from the current population
-            bestSolution = mainInstance.getBestChromosome();
             generation++;
+
+            // Plot the fitness graph every 10 generations
+            if (generation % 10 == 0) {
+                mainInstance.plotFitness(fitnessValues);
+            }
 
             // If the best solution found has a fitness of 0, print it and end the program
             if (bestSolution.getFitness() == 0) {
@@ -131,7 +144,6 @@ public class Main {
         }
         return copy;
     }
-
 
     public List<Chromosome> tournamentSelection(int tournamentSize) {
         List<Chromosome> selectedParents = new ArrayList<>();
@@ -341,26 +353,30 @@ public class Main {
         public void printChromosome(boolean printMutPos) {
             // Print the Sudoku matrix
             for (int[] row : sudoku) {
-                for (int j = 0; j < row.length; j++) {
-                    System.out.print(row[j]);
-                    if (j < row.length - 1) {
-                        System.out.print(" ");
-                    }
+                for (int j : row) {
+                    System.out.print(j + " ");
                 }
                 System.out.println();
             }
             // If requested, print mutable positions
             if (printMutPos) {
                 System.out.println("Mutable Positions:");
-                for (int i = 0; i < mutablePositions.size(); i++) {
-                    int[] pos = mutablePositions.get(i);
-                    System.out.print("(" + pos[0] + ", " + pos[1] + ")");
-                    if (i < mutablePositions.size() - 1) {
-                        System.out.print(" ");
-                    }
+                for (int[] pos : mutablePositions) {
+                    System.out.print("(" + pos[0] + ", " + pos[1] + ") ");
                 }
                 System.out.println();
             }
         }
     }
-}        
+
+    // Method to plot the fitness values over generations
+    public void plotFitness(List<Integer> fitnessValues) {
+        XYChart chart = new XYChart(800, 600);
+        chart.setTitle("Fitness over Generations");
+        chart.setXAxisTitle("Generation");
+        chart.setYAxisTitle("Fitness");
+        XYSeries series = chart.addSeries("Fitness", null, fitnessValues);
+        series.setXYSeriesRenderStyle(XYSeriesRenderStyle.Line);
+        new SwingWrapper<>(chart).displayChart();
+    }
+}   
