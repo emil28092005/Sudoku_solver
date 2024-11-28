@@ -1,8 +1,11 @@
 package com.example;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
 import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYSeries;
@@ -126,7 +129,7 @@ public class Main {
             // Randomly fill mutable positions
             for (int[] pos : mutablePositions) {
                 int row = pos[0];
-                int col = pos[1];
+                int col = pos[1];   
                 sudoku[row][col] = random.nextInt(9) + 1;
             }
             // Create a new chromosome with the generated Sudoku and mutable positions
