@@ -66,8 +66,8 @@ public class Main {
             MUTATIONRATE = 0.34;
         }
         else { // Ultra-hard sudoku
-            POPULATIONSIZE = 500000;
-            TOURNAMENTSIZE = 3;
+            POPULATIONSIZE = 100000;
+            TOURNAMENTSIZE = 10;
             MUTATIONRATE = 0.1;
         }
         
@@ -109,7 +109,7 @@ public class Main {
             generation++;
 
             // Plot the fitness graph every 10 generations
-            if (generation % 1 == 0) {
+            if (generation % 10 == 0) {
                 mainInstance.plotFitness(fitnessValues);
             }
 
