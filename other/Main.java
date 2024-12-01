@@ -13,7 +13,7 @@ public class Main {
     // Threshold of number of mutable positions for easy level sudoku
     public static int EASYTHRESHOLD = 60; 
     public static int HARDTHRESHOLD = 70;
-    // List to store the population of chromosomes  
+    // List to store the population of chromosomes
     List<Chromosome> population = new ArrayList<>();
     Random random = new Random();
 
@@ -51,22 +51,20 @@ public class Main {
 
         // Choosing variables for different sudoku difficulties
         if (mutablePositions.size() < EASYTHRESHOLD) { // Easy sudoku
-            POPULATIONSIZE = 100000;
-            TOURNAMENTSIZE = 8;
-            MUTATIONRATE = 0.34;
+            POPULATIONSIZE = 100;
+            TOURNAMENTSIZE = 5;
+            MUTATIONRATE = 0.05;
         } else if (mutablePositions.size() < HARDTHRESHOLD) { // Hard sudoku
-            POPULATIONSIZE = 100000;
-            TOURNAMENTSIZE = 8;
-            MUTATIONRATE = 0.34;
+            POPULATIONSIZE = 100;
+            TOURNAMENTSIZE = 5;
+            MUTATIONRATE = 0.057;
         }
         else { // Ultra-hard sudoku
-            POPULATIONSIZE = 250000;
+            POPULATIONSIZE = 20000;
             TOURNAMENTSIZE = 4;
-            MUTATIONRATE = 0.15;
+            MUTATIONRATE = 0.032;
         }
         
-        
-
         // Generate initial population of 100 chromosomes
         mainInstance.generateInitialChromosomes(POPULATIONSIZE, baseSudoku, mutablePositions);
 
@@ -114,32 +112,11 @@ public class Main {
         for (int i = 0; i < numberOfChromosomes; i++) {
             // Create a copy of the base Sudoku
             int[][] sudoku = copyMatrix(baseSudoku);
-            // Randomly fill mutable positions while ensuring no duplicates in subgrids
-            for (int gridRow = 0; gridRow < 3; gridRow++) {
-                for (int gridCol = 0; gridCol < 3; gridCol++) {
-                    boolean[] present = new boolean[10];
-                    List<int[]> subgridPositions = new ArrayList<>();
-                    // Collect all positions in the current 3x3 subgrid
-                    for (int row = gridRow * 3; row < gridRow * 3 + 3; row++) {
-                        for (int col = gridCol * 3; col < gridCol * 3 + 3; col++) {
-                            int value = sudoku[row][col];
-                            if (value != 0) {
-                                present[value] = true;
-                            } else {
-                                subgridPositions.add(new int[]{row, col});
-                            }
-                        }
-                    }
-                    // Randomly fill the subgrid ensuring no duplicates
-                    for (int[] pos : subgridPositions) {
-                        int newValue;
-                        do {
-                            newValue = random.nextInt(9) + 1;
-                        } while (present[newValue]);
-                        sudoku[pos[0]][pos[1]] = newValue;
-                        present[newValue] = true;
-                    }
-                }
+            // Randomly fill mutable positions
+            for (int[] pos : mutablePositions) {
+                int row = pos[0];
+                int col = pos[1];
+                sudoku[row][col] = random.nextInt(9) + 1;
             }
             // Create a new chromosome with the generated Sudoku and mutable positions
             Chromosome chromosome = new Chromosome(sudoku, new ArrayList<>(mutablePositions));
@@ -147,7 +124,6 @@ public class Main {
             population.add(chromosome); // Add to the population
         }
     }
-
 
     // Create a deep copy of a matrix
     private int[][] copyMatrix(int[][] original) {
@@ -231,29 +207,15 @@ public class Main {
     
     public void mutateChromosome(Chromosome chromosome, double mutationRate) {
         int[][] sudoku = chromosome.getSudoku();
+        List<int[]> mutablePositions = chromosome.getMutablePositions();
     
-        // With a probability defined by mutationRate, perform a mutation by swapping subgrids
-        if (random.nextDouble() < mutationRate) {
-            // Randomly select two different subgrids to swap
-            int subgrid1, subgrid2;
-            do {
-                subgrid1 = random.nextInt(9);
-                subgrid2 = random.nextInt(9);
-            } while (subgrid1 == subgrid2);
-    
-            // Get the starting coordinates for both subgrids
-            int rowStart1 = (subgrid1 / 3) * 3;
-            int colStart1 = (subgrid1 % 3) * 3;
-            int rowStart2 = (subgrid2 / 3) * 3;
-            int colStart2 = (subgrid2 % 3) * 3;
-    
-            // Swap the values in the two selected subgrids
-            for (int rowOffset = 0; rowOffset < 3; rowOffset++) {
-                for (int colOffset = 0; colOffset < 3; colOffset++) {
-                    int temp = sudoku[rowStart1 + rowOffset][colStart1 + colOffset];
-                    sudoku[rowStart1 + rowOffset][colStart1 + colOffset] = sudoku[rowStart2 + rowOffset][colStart2 + colOffset];
-                    sudoku[rowStart2 + rowOffset][colStart2 + colOffset] = temp;
-                }
+        // Mutate each mutable position with a probability defined by mutationRate
+        for (int[] pos : mutablePositions) {
+            if (random.nextDouble() < mutationRate) {
+                int row = pos[0];
+                int col = pos[1];
+                int newValue = random.nextInt(9) + 1; // Assign a new value between 1 and 9
+                sudoku[row][col] = newValue;
             }
         }
     
@@ -261,7 +223,6 @@ public class Main {
         chromosome.setSudoku(sudoku);
         chromosome.evaluateFitness();
     }
-    
     
     public void evaluatePopulation() {
         // Evaluate the fitness of each chromosome in the population
