@@ -1,15 +1,9 @@
-package com.example;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import org.knowm.xchart.SwingWrapper;
-import org.knowm.xchart.XYChart;
-import org.knowm.xchart.XYSeries;
-import org.knowm.xchart.XYSeries.XYSeriesRenderStyle;
 
 public class Main {
     // Initalizing variables
@@ -57,45 +51,29 @@ public class Main {
 
         // Choosing variables for different sudoku difficulties
         if (mutablePositions.size() < EASYTHRESHOLD) { // Easy sudoku
-            POPULATIONSIZE = 500000;
-            TOURNAMENTSIZE = 3;
-            MUTATIONRATE = 0.1;
+            POPULATIONSIZE = 100;
+            TOURNAMENTSIZE = 5;
+            MUTATIONRATE = 0.05;
         } else if (mutablePositions.size() < HARDTHRESHOLD) { // Hard sudoku
-            POPULATIONSIZE = 100000;
-            TOURNAMENTSIZE = 8;
-            MUTATIONRATE = 0.34;
+            POPULATIONSIZE = 100;
+            TOURNAMENTSIZE = 5;
+            MUTATIONRATE = 0.057;
         }
         else { // Ultra-hard sudoku
-            POPULATIONSIZE = 100000;
-            TOURNAMENTSIZE = 10;
-            MUTATIONRATE = 0.0;
+            POPULATIONSIZE = 20000;
+            TOURNAMENTSIZE = 4;
+            MUTATIONRATE = 0.032;
         }
         
-        // Generate initial population of chromosomes
+        // Generate initial population of 100 chromosomes
         mainInstance.generateInitialChromosomes(POPULATIONSIZE, baseSudoku, mutablePositions);
 
         Chromosome bestSolution = null;
-        List<Integer> fitnessValues = new ArrayList<>();
 
         int generation = 0; // Track the number of generations
-        int stuckCounter = 0;
-        int tryUnstuckCount = 0;
-        boolean unstucking = false;
-
-        int INITIAL_POPULATIONSIZE = POPULATIONSIZE;
-        int INITIAL_TOURNAMENTSIZE = TOURNAMENTSIZE;
-        double INITIAL_MUTATIONRATE = MUTATIONRATE;
-        
-        
-
-
         while (true) {
             // Evaluate the fitness of each chromosome in the population
             mainInstance.evaluatePopulation();
-
-            // Track the best fitness value in the current generation
-            bestSolution = mainInstance.getBestChromosome();
-            fitnessValues.add(bestSolution.getFitness());
 
             List<Chromosome> newPopulation = new ArrayList<>();
             for (int i = 0; i < mainInstance.population.size() / 2; i++) {
@@ -117,52 +95,16 @@ public class Main {
             // Replace the old population with the new population
             mainInstance.population = newPopulation;
 
+            // Get the best chromosome from the current population
+            bestSolution = mainInstance.getBestChromosome();
             generation++;
 
-            // Plot the fitness graph every 10 generations
-            if (generation % 10 == 0) {
-                mainInstance.plotFitness(fitnessValues);
-            }
-            
             // If the best solution found has a fitness of 0, print it and end the program
             if (bestSolution.getFitness() == 0) {
                 bestSolution.printChromosome(false);
                 return;
             }
-            /* 
-            // Check if algorithm is stuck
-            if (fitnessValues.size() > 2) {
-                if (fitnessValues.get(fitnessValues.size()-1) == fitnessValues.get(fitnessValues.size()-2)){
-                    stuckCounter++;
-                    System.out.println("StuckCount: " + stuckCounter);
-                    if (stuckCounter > 20){
-                        if (MUTATIONRATE < 1){
-                            unstucking = true;
-                            System.out.println(MUTATIONRATE);
-                            System.out.println(POPULATIONSIZE);
-                            MUTATIONRATE = MUTATIONRATE * 1.1 + 0.01;
-                            POPULATIONSIZE /= 2;
-                            TOURNAMENTSIZE /= 2;
-                        }
-                        stuckCounter = 0;
-                    }
-                } else {
-                    stuckCounter = 0;
-                }
-            }
-            if (unstucking) {
-                System.out.println("Unstucking");
-                tryUnstuckCount++;
-                if (tryUnstuckCount > 100){
-                    unstucking = false;
-                    tryUnstuckCount = 0;
-                    POPULATIONSIZE = INITIAL_POPULATIONSIZE;
-                    TOURNAMENTSIZE = INITIAL_TOURNAMENTSIZE;
-                    MUTATIONRATE = INITIAL_MUTATIONRATE;
-                }
-            }
-            System.out.println("UnstuckCount: " + tryUnstuckCount);
-            }*/
+        }
     }
 
     // Generate initial population of chromosomes
@@ -170,32 +112,11 @@ public class Main {
         for (int i = 0; i < numberOfChromosomes; i++) {
             // Create a copy of the base Sudoku
             int[][] sudoku = copyMatrix(baseSudoku);
-            // Randomly fill mutable positions while ensuring no duplicates in subgrids
-            for (int gridRow = 0; gridRow < 3; gridRow++) {
-                for (int gridCol = 0; gridCol < 3; gridCol++) {
-                    boolean[] present = new boolean[10];
-                    List<int[]> subgridPositions = new ArrayList<>();
-                    // Collect all positions in the current 3x3 subgrid
-                    for (int row = gridRow * 3; row < gridRow * 3 + 3; row++) {
-                        for (int col = gridCol * 3; col < gridCol * 3 + 3; col++) {
-                            int value = sudoku[row][col];
-                            if (value != 0) {
-                                present[value] = true;
-                            } else {
-                                subgridPositions.add(new int[]{row, col});
-                            }
-                        }
-                    }
-                    // Randomly fill the subgrid ensuring no duplicates
-                    for (int[] pos : subgridPositions) {
-                        int newValue;
-                        do {
-                            newValue = random.nextInt(9) + 1;
-                        } while (present[newValue]);
-                        sudoku[pos[0]][pos[1]] = newValue;
-                        present[newValue] = true;
-                    }
-                }
+            // Randomly fill mutable positions
+            for (int[] pos : mutablePositions) {
+                int row = pos[0];
+                int col = pos[1];
+                sudoku[row][col] = random.nextInt(9) + 1;
             }
             // Create a new chromosome with the generated Sudoku and mutable positions
             Chromosome chromosome = new Chromosome(sudoku, new ArrayList<>(mutablePositions));
@@ -212,6 +133,7 @@ public class Main {
         }
         return copy;
     }
+
 
     public List<Chromosome> tournamentSelection(int tournamentSize) {
         List<Chromosome> selectedParents = new ArrayList<>();
@@ -285,29 +207,15 @@ public class Main {
     
     public void mutateChromosome(Chromosome chromosome, double mutationRate) {
         int[][] sudoku = chromosome.getSudoku();
+        List<int[]> mutablePositions = chromosome.getMutablePositions();
     
-        // With a probability defined by mutationRate, perform a mutation by swapping subgrids
-        if (random.nextDouble() < mutationRate) {
-            // Randomly select two different subgrids to swap
-            int subgrid1, subgrid2;
-            do {
-                subgrid1 = random.nextInt(9);
-                subgrid2 = random.nextInt(9);
-            } while (subgrid1 == subgrid2);
-    
-            // Get the starting coordinates for both subgrids
-            int rowStart1 = (subgrid1 / 3) * 3;
-            int colStart1 = (subgrid1 % 3) * 3;
-            int rowStart2 = (subgrid2 / 3) * 3;
-            int colStart2 = (subgrid2 % 3) * 3;
-    
-            // Swap the values in the two selected subgrids
-            for (int rowOffset = 0; rowOffset < 3; rowOffset++) {
-                for (int colOffset = 0; colOffset < 3; colOffset++) {
-                    int temp = sudoku[rowStart1 + rowOffset][colStart1 + colOffset];
-                    sudoku[rowStart1 + rowOffset][colStart1 + colOffset] = sudoku[rowStart2 + rowOffset][colStart2 + colOffset];
-                    sudoku[rowStart2 + rowOffset][colStart2 + colOffset] = temp;
-                }
+        // Mutate each mutable position with a probability defined by mutationRate
+        for (int[] pos : mutablePositions) {
+            if (random.nextDouble() < mutationRate) {
+                int row = pos[0];
+                int col = pos[1];
+                int newValue = random.nextInt(9) + 1; // Assign a new value between 1 and 9
+                sudoku[row][col] = newValue;
             }
         }
     
@@ -315,7 +223,6 @@ public class Main {
         chromosome.setSudoku(sudoku);
         chromosome.evaluateFitness();
     }
-
     
     public void evaluatePopulation() {
         // Evaluate the fitness of each chromosome in the population
@@ -436,30 +343,33 @@ public class Main {
         public void printChromosome(boolean printMutPos) {
             // Print the Sudoku matrix
             for (int[] row : sudoku) {
-                for (int j : row) {
-                    System.out.print(j + " ");
+                for (int j = 0; j < row.length; j++) {
+                    System.out.print(row[j]);
+                    if (j < row.length - 1) {
+                        System.out.print(" ");
+                    }
                 }
                 System.out.println();
             }
             // If requested, print mutable positions
             if (printMutPos) {
                 System.out.println("Mutable Positions:");
-                for (int[] pos : mutablePositions) {
-                    System.out.print("(" + pos[0] + ", " + pos[1] + ") ");
+                for (int i = 0; i < mutablePositions.size(); i++) {
+                    int[] pos = mutablePositions.get(i);
+                    System.out.print("(" + pos[0] + ", " + pos[1] + ")");
+                    if (i < mutablePositions.size() - 1) {
+                        System.out.print(" ");
+                    }
                 }
                 System.out.println();
             }
         }
     }
+}        
 
-    // Method to plot the fitness values over generations
-    public void plotFitness(List<Integer> fitnessValues) {
-        XYChart chart = new XYChart(800, 600);
-        chart.setTitle("Fitness over Generations");
-        chart.setXAxisTitle("Generation");
-        chart.setYAxisTitle("Fitness");
-        XYSeries series = chart.addSeries("Fitness", null, fitnessValues);
-        series.setXYSeriesRenderStyle(XYSeriesRenderStyle.Line);
-        new SwingWrapper<>(chart).displayChart();
-    }
-}   
+
+
+
+
+
+

@@ -69,11 +69,23 @@ public class Main {
         mainInstance.generateInitialChromosomes(POPULATIONSIZE, baseSudoku, mutablePositions);
 
         Chromosome bestSolution = null;
+        List<Integer> fitnessValues = new ArrayList<>();
+
+        int stuckCounter = 0;
+        int tryUnstuckCount = 0;
+        boolean unstucking = false;
+
+        int INITIAL_POPULATIONSIZE = POPULATIONSIZE;
+        int INITIAL_TOURNAMENTSIZE = TOURNAMENTSIZE;
+        double INITIAL_MUTATIONRATE = MUTATIONRATE;
 
         int generation = 0; // Track the number of generations
         while (true) {
             // Evaluate the fitness of each chromosome in the population
             mainInstance.evaluatePopulation();
+
+            bestSolution = mainInstance.getBestChromosome();
+            fitnessValues.add(bestSolution.getFitness());
 
             List<Chromosome> newPopulation = new ArrayList<>();
             for (int i = 0; i < mainInstance.population.size() / 2; i++) {
@@ -104,6 +116,38 @@ public class Main {
                 bestSolution.printChromosome(false);
                 return;
             }
+
+            //change arguments when algorithm is stuck
+            if (fitnessValues.size() > 2) {
+                if (fitnessValues.get(fitnessValues.size()-1) == fitnessValues.get(fitnessValues.size()-2)){
+                    stuckCounter++;
+                    //System.out.println("StuckCount: " + String.valueOf(stuckCounter));
+                    if (stuckCounter > 50){
+                        if (MUTATIONRATE < 1){
+                            unstucking = true;
+                            System.out.println(MUTATIONRATE);
+                            System.out.println(POPULATIONSIZE);
+                            MUTATIONRATE = MUTATIONRATE * 1.1 + 0.01;
+                            POPULATIONSIZE /= 2;
+                        }
+                        stuckCounter = 0;
+                    }
+                } else{
+                    stuckCounter = 0;
+                }
+            }
+            if (unstucking) {
+                //System.out.println("Unstucking");
+                tryUnstuckCount++;
+                if (tryUnstuckCount > 100){
+                    unstucking = false;
+                    tryUnstuckCount = 0;
+                    POPULATIONSIZE = INITIAL_POPULATIONSIZE; 
+                    TOURNAMENTSIZE = INITIAL_TOURNAMENTSIZE;
+                    MUTATIONRATE = INITIAL_MUTATIONRATE;
+                }
+            }
+            //System.out.println("UnstuckCount: " + String.valueOf(tryUnstuckCount));
         }
     }
 
